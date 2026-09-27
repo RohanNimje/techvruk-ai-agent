@@ -1,0 +1,58 @@
+TechVruk Internship Program - Company Knowledge Base
+=====================================================
+
+## About TechVruk
+TechVruk is an innovative AI-first technology company founded in 2021, headquartered in Bangalore, India.
+Our mission is to democratize artificial intelligence for businesses of all sizes across South Asia and beyond.
+We specialize in building custom AI solutions, LLM-powered products, and intelligent automation pipelines.
+
+## Our Core Products
+1. VrukMind - An enterprise conversational AI platform built on top of large language models.
+2. DataSense - A real-time analytics dashboard powered by ML anomaly detection.
+3. AutoFlow - A no-code AI workflow builder that lets non-technical teams automate processes.
+
+## Internship Program Details
+- The TechVruk Summer Internship runs for 3 months (June to August).
+- Interns are placed in one of four tracks: AI/ML, Backend Engineering, Frontend Engineering, or Product Design.
+- Stipend for AI/ML track: INR 20,000 per month.
+- All interns receive a MacBook Pro for the internship duration.
+- The program ends with a Demo Day where interns present their projects to the leadership team.
+- Top performers are offered Pre-Placement Offers (PPOs) for full-time roles.
+
+## Technical Stack Used at TechVruk
+- Backend: Python (FastAPI, LangChain, LangGraph), Node.js
+- Frontend: React.js, Next.js, Tailwind CSS
+- AI/ML: Google Gemini, OpenAI GPT-4, HuggingFace models, FAISS, Pinecone
+- Infrastructure: Google Cloud Platform (GCP), Docker, Kubernetes
+- Databases: PostgreSQL, MongoDB, Redis
+
+## Company Culture & Values
+- We believe in "Ship Fast, Learn Faster" — an iterative build culture.
+- Every Friday is dedicated to internal hackathons or tech talks (we call it "Vruk Fridays").
+- Remote-first policy with optional coworking in our Bangalore office.
+- We support open-source contributions and encourage engineers to publish research.
+
+## Recent Achievements
+- Winner of the NASSCOM AI Startup of the Year Award 2024.
+- Reached 500+ enterprise customers across India, Southeast Asia, and the Middle East.
+- Raised a Series A funding round of $8 million in January 2025.
+- Launched a free AI literacy program called "AI for Bharat" that trained over 10,000 students.
+
+## HR & Policies
+- Leave Policy: 12 annual leaves, 6 sick leaves per year for full-time employees.
+- Interns are entitled to 2 casual leaves per month.
+- Medical insurance is provided for all full-time employees (not interns).
+- Performance reviews happen every 6 months.
+- The HR point of contact for interns is hr-interns@techvruk.com.
+
+## Key Team Members
+- CEO: Arjun Mehta (IIT Bombay alumnus, ex-Google AI)
+- CTO: Priya Nair (formerly at DeepMind, published 12 research papers)
+- Head of Internships: Rohan Sharma (rohan.sharma@techvruk.com)
+- Lead AI Engineer: Kavya Reddy (specializes in LangGraph and multi-agent systems)
+
+## Interview & Hiring Process
+- Round 1: Online coding test (Data Structures + Python basics)
+- Round 2: Technical deep-dive (ML concepts, system design)
+- Round 3: Culture fit interview with the team lead
+- Offer letters are rolled out within 5 business days of the final round.
