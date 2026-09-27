@@ -73,9 +73,12 @@ st.markdown("""
         -moz-osx-font-smoothing: grayscale;
     }
 
-    /* ── Hide only the hamburger menu and footer — leave header & toggle untouched ── */
+    /* ── Hide Streamlit Chrome & Cloud Toolbar ─────────────────────────── */
     #MainMenu { visibility: hidden !important; display: none !important; }
     footer    { visibility: hidden !important; display: none !important; }
+    [data-testid="stToolbar"] { display: none !important; }
+    [data-testid="stHeader"]  { display: none !important; }
+    header[data-testid="stHeader"] .stAppHeader { display: none !important; }
 
     /* ── Sidebar Collapse Button (inside expanded sidebar) ─────────────── */
     /* Streamlit renders this as a button at the top of the sidebar panel.  */
@@ -99,19 +102,24 @@ st.markdown("""
 
     /* ── Sidebar Expand Button (when sidebar is collapsed) ─────────────── */
     /* Streamlit renders this as a floating chevron on the left edge.       */
-    /* We style it cleanly but NEVER hide it.                               */
+    /* Must ALWAYS remain visible and functional.                           */
     [data-testid="collapsedControl"] {
+        display: flex !important;
+        visibility: visible !important;
         background-color: #FFFFFF !important;
         border: 1px solid #E2E8F0 !important;
         border-radius: 0 8px 8px 0 !important;
         box-shadow: 2px 0 6px rgba(15, 23, 42, 0.06) !important;
         transition: border-color 0.15s ease, box-shadow 0.15s ease !important;
+        z-index: 999999 !important;
     }
     [data-testid="collapsedControl"]:hover {
         border-color: #6366F1 !important;
         box-shadow: 2px 0 8px rgba(99, 102, 241, 0.12) !important;
     }
     [data-testid="collapsedControl"] button {
+        display: flex !important;
+        visibility: visible !important;
         color: #334155 !important;
     }
     [data-testid="collapsedControl"] button:hover {
