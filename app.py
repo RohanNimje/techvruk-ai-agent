@@ -8,6 +8,7 @@
 import os
 import time
 from dotenv import load_dotenv
+import streamlit.components.v1 as components
 
 # Load environment variables from .env before importing agent
 load_dotenv()
@@ -735,7 +736,11 @@ with st.sidebar:
     ]
     for q in suggested_queries:
         if st.button(q, key=f"pill_{q[:16]}", use_container_width=True):
+            # Immediately push the query into chat history and rerun so the
+            # user bubble appears in the UI before the API call is made.
+            st.session_state["messages"].append({"role": "user", "content": q})
             st.session_state["prefill_query"] = q
+            st.rerun()
 
     st.markdown("<hr>", unsafe_allow_html=True)
 
@@ -853,8 +858,11 @@ else:
 # CHAT INPUT & EXECUTION
 # =============================================================================
 
-# Retrieve and consume prefill from sidebar buttons if clicked
+# Retrieve and consume prefill from sidebar buttons if clicked.
+# _from_pill=True means the user bubble was already appended + the rerun
+# happened inside the sidebar button handler — so we must NOT append again.
 prefill = st.session_state.pop("prefill_query", "")
+_from_pill = bool(prefill)
 
 user_input = st.chat_input(placeholder="Ask about TechVruk or anything across the web…")
 
@@ -863,8 +871,11 @@ if prefill and not user_input:
     user_input = prefill
 
 if user_input:
-    # 1. Append user message to history and render immediately
-    st.session_state["messages"].append({"role": "user", "content": user_input})
+    # 1. Append user message to history ONLY when it wasn't already added
+    #    by the sidebar pill handler (which appends + reruns to show the
+    #    bubble immediately, before the API call).
+    if not _from_pill:
+        st.session_state["messages"].append({"role": "user", "content": user_input})
     st.markdown(
         f'<div class="message-row"><div class="user-bubble">{user_input}</div></div>',
         unsafe_allow_html=True,
@@ -1030,3 +1041,33 @@ if user_input:
 
     # 6. Rerun to refresh the metric counters at the top
     st.rerun()
+
+# =============================================================================
+# AUTO-SCROLL TO BOTTOM
+# =============================================================================
+# Inject a tiny JS snippet that scrolls the Streamlit main container
+# (.main) to its full scrollHeight after every render cycle.
+components.html(
+    """
+    <script>
+        (function () {
+            // Walk up from this iframe to find the parent Streamlit document
+            // and scroll the .main scrollable area to the bottom.
+            function scrollToBottom() {
+                try {
+                    var mainEl = window.parent.document.querySelector('.main');
+                    if (mainEl) {
+                        mainEl.scrollTo({ top: mainEl.scrollHeight, behavior: 'smooth' });
+                    }
+                } catch (e) {}
+            }
+            // Run immediately and also after a brief delay to catch
+            // content that renders after the script fires.
+            scrollToBottom();
+            setTimeout(scrollToBottom, 300);
+        })();
+    </script>
+    """,
+    height=0,
+    scrolling=False,
+)
