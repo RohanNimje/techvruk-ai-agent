@@ -672,15 +672,17 @@ with st.sidebar:
     st.markdown("<hr>", unsafe_allow_html=True)
 
     # ── Model Selector ────────────────────────────────────────────────────────
+    # Single source of truth for all model-related logic (selector + fallback suggestions).
+    AVAILABLE_MODELS = [
+        "gemini-3.8-flash",
+        "gemini-3.7-flash",
+        "gemini-3.5-flash",
+        "gemini-3.5-flash-lite",
+        "gemini-3.1-flash-lite",
+    ]
     selected_model = st.selectbox(
         "Active Intelligence Model",
-        options=[
-            "gemini-3.8-flash",
-            "gemini-3.7-flash",
-            "gemini-3.5-flash",
-            "gemini-3.5-flash-lite",
-            "gemini-3.1-flash-lite",
-        ],
+        options=AVAILABLE_MODELS,
         index=0,
         help="Select the Gemini foundation model used for reasoning and tool orchestration.",
         key="model_selector",
@@ -910,13 +912,16 @@ if user_input:
             )
             if any(sig.lower() in err_str.lower() for sig in _quota_signals):
                 _error_type  = "quota"
+                # Build alternatives dynamically — exclude the model that just failed
+                # so we never recommend a model as its own fallback.
+                _alt_models = [m for m in AVAILABLE_MODELS if m != selected_model]
+                _alt_str = " \u00b7 ".join(f"`{m}`" for m in _alt_models)
                 _agent_error = (
                     f"⚠️ **API Quota Exceeded**\n\n"
                     f"The model **{selected_model}** has temporarily hit its rate limit. "
                     f"This usually resolves within a minute, or you can switch to a lighter "
                     f"model from the sidebar right now.\n\n"
-                    f"**Suggested alternatives:** "
-                    f"`gemini-3.5-flash-lite` \u00b7 `gemini-3.1-flash-lite`"
+                    f"**Suggested alternatives:** {_alt_str}"
                 )
             else:
                 _error_type  = "generic"

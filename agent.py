@@ -105,16 +105,26 @@ def rag_search(query: str) -> str:
     tech stack, and other internal topics. Use this tool FIRST for any question
     that sounds like it could be answered from internal company documents.
     """
-    # similarity_search returns the top-k most relevant document chunks
-    vector_store = get_vector_store()
-    results = vector_store.similarity_search(query, k=3)
+    try:
+        # similarity_search returns the top-k most relevant document chunks
+        vector_store = get_vector_store()
+        results = vector_store.similarity_search(query, k=3)
 
-    if not results:
-        return "No relevant information found in the internal knowledge base."
+        if not results:
+            return "No relevant information found in the internal knowledge base."
 
-    # Combine the content of the top matching chunks into a single string
-    combined = "\n\n---\n\n".join([doc.page_content for doc in results])
-    return f"[Internal KB Results]\n\n{combined}"
+        # Combine the content of the top matching chunks into a single string
+        combined = "\n\n---\n\n".join([doc.page_content for doc in results])
+        return f"[Internal KB Results]\n\n{combined}"
+
+    except Exception as e:
+        # Return a graceful fallback so a FAISS / embedding failure doesn't
+        # crash the entire LangGraph run — the LLM can still try web_search.
+        print(f"rag_search error: {e}")
+        return (
+            "[Internal KB Unavailable] The knowledge base search encountered an error. "
+            "Please try rephrasing your question or use the web search tool instead."
+        )
 
 
 @tool
@@ -124,11 +134,29 @@ def web_search(query: str) -> str:
     information such as current news, recent events, general world knowledge,
     public company data, or anything not found in internal company documents.
     """
-    # DuckDuckGoSearchRun is a LangChain wrapper around DuckDuckGo's search API.
-    # It returns a summary string of the top search results.
-    search = DuckDuckGoSearchRun()
-    result = search.run(query)
-    return f"[Web Search Results]\n\n{result}"
+    try:
+        # DuckDuckGoSearchRun is a LangChain wrapper around DuckDuckGo's search API.
+        # It returns a summary string of the top search results.
+        search = DuckDuckGoSearchRun()
+        result = search.run(query)
+        if not result or not result.strip():
+            return "[Web Search] No results returned for this query. Please try a different search term."
+        return f"[Web Search Results]\n\n{result}"
+
+    except Exception as e:
+        err_str = str(e)
+        print(f"web_search error: {e}")
+        # Distinguish rate-limit errors so the LLM can give a helpful reply.
+        _rate_signals = ("202", "429", "rate", "ratelimit", "too many", "blocked")
+        if any(sig.lower() in err_str.lower() for sig in _rate_signals):
+            return (
+                "[Web Search Unavailable] DuckDuckGo has temporarily rate-limited this request. "
+                "Please wait a moment and try again."
+            )
+        return (
+            f"[Web Search Unavailable] The web search encountered an error: {err_str[:200]}. "
+            "Please try again shortly."
+        )
 
 
 # =============================================================================
@@ -142,11 +170,6 @@ def web_search(query: str) -> str:
 # Collect tools in a list so we can bind them and also pass them to ToolNode
 TOOLS = [rag_search, web_search]
 
-# FALLBACK_MODEL is used when the requested model returns a 404 (not found).
-# This prevents the app from crashing if a user selects a model that is
-# unavailable in their region or API tier.
-FALLBACK_MODEL = "gemini-3.8-flash"
-
 
 def build_llm(model_name: str = "gemini-3.8-flash"):
     """
@@ -154,7 +177,11 @@ def build_llm(model_name: str = "gemini-3.8-flash"):
 
     Args:
         model_name: The Gemini model to use (e.g. 'gemini-3.8-flash', 'gemini-3.5-flash').
-                    Falls back to FALLBACK_MODEL if the requested model causes a 404.
+
+    Raises immediately on any failure — no automatic fallback. This lets
+    app.py's top-level exception handler classify the error (quota vs. generic)
+    and render the styled error card so the user can manually switch models
+    from the sidebar.
     """
     api_key = os.environ.get("GOOGLE_API_KEY")
     if not api_key:
@@ -163,31 +190,18 @@ def build_llm(model_name: str = "gemini-3.8-flash"):
             "Please set it before running the agent."
         )
 
-    try:
-        # Attempt to initialize and bind the user-requested model.
-        # ChatGoogleGenerativeAI wraps the Gemini model for chat-style interactions.
-        print(f"Initializing LLM with model: {model_name}")
-        llm = ChatGoogleGenerativeAI(
-            model=model_name,
-            google_api_key=api_key,
-            temperature=0.3,    # Lower temp → more factual, consistent answers
-        )
-        # .bind_tools() attaches the tool schemas to the LLM so it knows
-        # which tools are available and what arguments each tool expects.
-        llm_with_tools = llm.bind_tools(TOOLS)
-        return llm_with_tools, model_name
-
-    except Exception as e:
-        # If the requested model is unavailable (e.g. 404 Not Found, quota
-        # exceeded, or model deprecated), fall back to the stable FALLBACK_MODEL.
-        print(f"⚠️  Model '{model_name}' failed ({e}). Falling back to '{FALLBACK_MODEL}'.")
-        llm = ChatGoogleGenerativeAI(
-            model=FALLBACK_MODEL,
-            google_api_key=api_key,
-            temperature=0.3,
-        )
-        llm_with_tools = llm.bind_tools(TOOLS)
-        return llm_with_tools, FALLBACK_MODEL
+    # No try/except here — let all failures propagate directly to app.py's
+    # handler, which will show the appropriate styled error card.
+    print(f"Initializing LLM with model: {model_name}")
+    llm = ChatGoogleGenerativeAI(
+        model=model_name,
+        google_api_key=api_key,
+        temperature=0.3,    # Lower temp → more factual, consistent answers
+    )
+    # .bind_tools() attaches the tool schemas to the LLM so it knows
+    # which tools are available and what arguments each tool expects.
+    llm_with_tools = llm.bind_tools(TOOLS)
+    return llm_with_tools, model_name
 
 
 # =============================================================================
@@ -244,11 +258,20 @@ def reasoner_node(state: MessagesState) -> dict:
     The returned dict {"messages": [response]} is MERGED into the state's
     message list by LangGraph's `add_messages` reducer (not overwritten).
     """
+    from langchain_core.messages import AIMessage
+
     # Prepend the system prompt to provide context on every LLM call
     messages = [SYSTEM_PROMPT] + state["messages"]
 
-    # Invoke the LLM — it either returns text or a tool call
-    response = _llm_with_tools.invoke(messages)
+    try:
+        # Invoke the LLM — it either returns text or a tool call
+        response = _llm_with_tools.invoke(messages)
+    except Exception as e:
+        # Surface LLM errors as a plain AIMessage so the graph reaches END
+        # cleanly instead of crashing — app.py's top-level handler will then
+        # re-raise this to display the styled error card in the UI.
+        print(f"reasoner_node LLM error: {e}")
+        raise  # re-raise so app.py's except block classifies & renders it
 
     # Return only the new message; LangGraph appends it to state["messages"]
     return {"messages": [response]}
