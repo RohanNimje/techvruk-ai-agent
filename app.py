@@ -871,15 +871,17 @@ if prefill and not user_input:
     user_input = prefill
 
 if user_input:
-    # 1. Append user message to history ONLY when it wasn't already added
-    #    by the sidebar pill handler (which appends + reruns to show the
-    #    bubble immediately, before the API call).
+    # 1. Append user message to history and render the bubble.
+    #    When the query came from a sidebar pill, the pill handler already
+    #    appended the message AND triggered st.rerun(), so the history loop
+    #    above has already painted the bubble — skip both operations here
+    #    to avoid a duplicate bubble during the "Synthesizing…" phase.
     if not _from_pill:
         st.session_state["messages"].append({"role": "user", "content": user_input})
-    st.markdown(
-        f'<div class="message-row"><div class="user-bubble">{user_input}</div></div>',
-        unsafe_allow_html=True,
-    )
+        st.markdown(
+            f'<div class="message-row"><div class="user-bubble">{user_input}</div></div>',
+            unsafe_allow_html=True,
+        )
 
     # 2. Invoke the agent with spinner feedback
     _agent_error: str | None = None   # None = success; str = error message to display
