@@ -905,10 +905,11 @@ if user_input:
             active_model = selected_model
             err_str      = str(e)
 
-            # ── Classify: quota / rate-limit vs generic error ─────────────
+            # ── Classify: quota / capacity / rate-limit vs generic error ──────────
             _quota_signals = (
                 "429", "RESOURCE_EXHAUSTED", "quota",
                 "rate limit", "rate_limit", "rateLimitExceeded", "Too Many Requests",
+                "503", "unavailable", "overloaded", "capacity", "high demand"
             )
             if any(sig.lower() in err_str.lower() for sig in _quota_signals):
                 _error_type  = "quota"
@@ -917,9 +918,9 @@ if user_input:
                 _alt_models = [m for m in AVAILABLE_MODELS if m != selected_model]
                 _alt_str = " \u00b7 ".join(f"`{m}`" for m in _alt_models)
                 _agent_error = (
-                    f"⚠️ **API Quota Exceeded**\n\n"
-                    f"The model **{selected_model}** has temporarily hit its rate limit. "
-                    f"This usually resolves within a minute, or you can switch to a lighter "
+                    f"⚠️ **API Busy or Quota Exceeded**\n\n"
+                    f"The model **{selected_model}** is currently overloaded or has hit its rate limit. "
+                    f"This usually resolves within a minute, or you can switch to another "
                     f"model from the sidebar right now.\n\n"
                     f"**Suggested alternatives:** {_alt_str}"
                 )
