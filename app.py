@@ -759,13 +759,36 @@ with st.sidebar:
     st.markdown('</div>', unsafe_allow_html=True)
 
 # =============================================================================
-# SMART MOBILE SIDEBAR AUTO-COLLAPSE
+# SMART MOBILE SIDEBAR AUTO-COLLAPSE & POSITIONING
 # =============================================================================
 if st.session_state.pop("collapse_sidebar_mobile", False):
     components.html(
         """
         <script>
             (function () {
+                function scrollChatToBottom() {
+                    try {
+                        if (!window.parent || !window.parent.document) return;
+                        var pDoc = window.parent.document;
+                        var targets = [
+                            pDoc.querySelector('[data-testid="stAppViewContainer"]'),
+                            pDoc.querySelector('.main'),
+                            pDoc.querySelector('section.main'),
+                            pDoc.querySelector('[data-testid="stMain"]'),
+                            pDoc.documentElement,
+                            pDoc.body
+                        ];
+                        targets.forEach(function(el) {
+                            if (el && typeof el.scrollTo === 'function') {
+                                el.scrollTo({ top: el.scrollHeight + 5000, behavior: 'smooth' });
+                            }
+                        });
+                        if (typeof window.parent.scrollTo === 'function') {
+                            window.parent.scrollTo({ top: (pDoc.body ? pDoc.body.scrollHeight : 999999) + 5000, behavior: 'smooth' });
+                        }
+                    } catch (e) {}
+                }
+
                 function tryCollapseSidebar() {
                     try {
                         if (window.parent && window.parent.innerWidth <= 991) {
@@ -782,9 +805,13 @@ if st.session_state.pop("collapse_sidebar_mobile", False):
                         }
                     } catch (e) {}
                 }
+
                 tryCollapseSidebar();
-                setTimeout(tryCollapseSidebar, 50);
-                setTimeout(tryCollapseSidebar, 150);
+                scrollChatToBottom();
+                setTimeout(function() { tryCollapseSidebar(); scrollChatToBottom(); }, 100);
+                setTimeout(scrollChatToBottom, 250);
+                setTimeout(scrollChatToBottom, 450);
+                setTimeout(scrollChatToBottom, 700);
             })();
         </script>
         """,
@@ -920,6 +947,43 @@ if user_input:
             f'<div class="message-row"><div class="user-bubble">{user_input}</div></div>',
             unsafe_allow_html=True,
         )
+
+    # Trigger smooth scroll so the new bubble & active spinner are immediately visible
+    components.html(
+        """
+        <script>
+            (function () {
+                function scrollChatToBottom() {
+                    try {
+                        if (!window.parent || !window.parent.document) return;
+                        var pDoc = window.parent.document;
+                        var targets = [
+                            pDoc.querySelector('[data-testid="stAppViewContainer"]'),
+                            pDoc.querySelector('.main'),
+                            pDoc.querySelector('section.main'),
+                            pDoc.querySelector('[data-testid="stMain"]'),
+                            pDoc.documentElement,
+                            pDoc.body
+                        ];
+                        targets.forEach(function(el) {
+                            if (el && typeof el.scrollTo === 'function') {
+                                el.scrollTo({ top: el.scrollHeight + 5000, behavior: 'smooth' });
+                            }
+                        });
+                        if (typeof window.parent.scrollTo === 'function') {
+                            window.parent.scrollTo({ top: (pDoc.body ? pDoc.body.scrollHeight : 999999) + 5000, behavior: 'smooth' });
+                        }
+                    } catch (e) {}
+                }
+                scrollChatToBottom();
+                setTimeout(scrollChatToBottom, 120);
+                setTimeout(scrollChatToBottom, 300);
+            })();
+        </script>
+        """,
+        height=0,
+        scrolling=False,
+    )
 
     # 2. Invoke the agent with spinner feedback
     _agent_error: str | None = None   # None = success; str = error message to display
@@ -1084,26 +1148,36 @@ if user_input:
 # =============================================================================
 # AUTO-SCROLL TO BOTTOM
 # =============================================================================
-# Inject a tiny JS snippet that scrolls the Streamlit main container
-# (.main) to its full scrollHeight after every render cycle.
+# Inject a JS snippet that smoothly scrolls all main containers to full height
 components.html(
     """
     <script>
         (function () {
-            // Walk up from this iframe to find the parent Streamlit document
-            // and scroll the .main scrollable area to the bottom.
-            function scrollToBottom() {
+            function scrollChatToBottom() {
                 try {
-                    var mainEl = window.parent.document.querySelector('.main');
-                    if (mainEl) {
-                        mainEl.scrollTo({ top: mainEl.scrollHeight, behavior: 'smooth' });
+                    if (!window.parent || !window.parent.document) return;
+                    var pDoc = window.parent.document;
+                    var targets = [
+                        pDoc.querySelector('[data-testid="stAppViewContainer"]'),
+                        pDoc.querySelector('.main'),
+                        pDoc.querySelector('section.main'),
+                        pDoc.querySelector('[data-testid="stMain"]'),
+                        pDoc.documentElement,
+                        pDoc.body
+                    ];
+                    targets.forEach(function(el) {
+                        if (el && typeof el.scrollTo === 'function') {
+                            el.scrollTo({ top: el.scrollHeight + 5000, behavior: 'smooth' });
+                        }
+                    });
+                    if (typeof window.parent.scrollTo === 'function') {
+                        window.parent.scrollTo({ top: (pDoc.body ? pDoc.body.scrollHeight : 999999) + 5000, behavior: 'smooth' });
                     }
                 } catch (e) {}
             }
-            // Run immediately and also after a brief delay to catch
-            // content that renders after the script fires.
-            scrollToBottom();
-            setTimeout(scrollToBottom, 300);
+            scrollChatToBottom();
+            setTimeout(scrollChatToBottom, 150);
+            setTimeout(scrollChatToBottom, 400);
         })();
     </script>
     """,
