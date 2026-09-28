@@ -742,7 +742,6 @@ with st.sidebar:
             # user bubble appears in the UI before the API call is made.
             st.session_state["messages"].append({"role": "user", "content": q})
             st.session_state["prefill_query"] = q
-            st.session_state["mobile_close_sidebar"] = True
             st.rerun()
 
     st.markdown("<hr>", unsafe_allow_html=True)
@@ -754,7 +753,6 @@ with st.sidebar:
         st.session_state["total_queries"] = 0
         st.session_state["rag_hits"] = 0
         st.session_state["web_hits"] = 0
-        st.session_state["mobile_close_sidebar"] = True
         st.rerun()
     st.markdown('</div>', unsafe_allow_html=True)
 
@@ -1046,25 +1044,6 @@ if user_input:
 
     # 6. Rerun to refresh the metric counters at the top
     st.rerun()
-
-# =============================================================================
-# MOBILE UX FIX: CLOSE SIDEBAR ON BUTTON CLICK
-# =============================================================================
-if st.session_state.pop("mobile_close_sidebar", False):
-    components.html(
-        """
-        <script>
-            (function () {
-                var collapseBtn = window.parent.document.querySelector('[data-testid="stSidebarCollapseButton"] button');
-                if (collapseBtn && window.parent.innerWidth <= 991) {
-                    collapseBtn.click();
-                }
-            })();
-        </script>
-        """,
-        height=0,
-        scrolling=False,
-    )
 
 # =============================================================================
 # AUTO-SCROLL TO BOTTOM
