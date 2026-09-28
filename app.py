@@ -759,59 +759,57 @@ with st.sidebar:
     st.markdown('</div>', unsafe_allow_html=True)
 
 # =============================================================================
-# SMART MOBILE SIDEBAR AUTO-COLLAPSE & POSITIONING
+# UNIFIED MOBILE ACTION: ATOMIC SIDEBAR COLLAPSE & STAGGERED SMOOTH SCROLL
 # =============================================================================
 if st.session_state.pop("collapse_sidebar_mobile", False):
     components.html(
         """
         <script>
             (function () {
-                function scrollChatToBottom() {
-                    try {
-                        if (!window.parent || !window.parent.document) return;
-                        var pDoc = window.parent.document;
-                        var targets = [
-                            pDoc.querySelector('[data-testid="stAppViewContainer"]'),
-                            pDoc.querySelector('.main'),
-                            pDoc.querySelector('section.main'),
-                            pDoc.querySelector('[data-testid="stMain"]'),
-                            pDoc.documentElement,
-                            pDoc.body
-                        ];
-                        targets.forEach(function(el) {
-                            if (el && typeof el.scrollTo === 'function') {
-                                el.scrollTo({ top: el.scrollHeight + 5000, behavior: 'smooth' });
-                            }
-                        });
-                        if (typeof window.parent.scrollTo === 'function') {
-                            window.parent.scrollTo({ top: (pDoc.body ? pDoc.body.scrollHeight : 999999) + 5000, behavior: 'smooth' });
-                        }
-                    } catch (e) {}
-                }
+                try {
+                    if (!window.parent || !window.parent.document) return;
+                    var pDoc = window.parent.document;
+                    var pWin = window.parent;
 
-                function tryCollapseSidebar() {
-                    try {
-                        if (window.parent && window.parent.innerWidth <= 991) {
-                            var doc = window.parent.document;
-                            var collapseBtn = doc.querySelector(
-                                '[data-testid="stSidebarCollapseButton"] button, ' +
-                                '[data-testid="stSidebarCollapseButton"] > button, ' +
-                                'button[data-testid="stSidebarCollapseButton"], ' +
-                                '[data-testid="stSidebar"] button[kind="header"]'
-                            );
-                            if (collapseBtn) {
-                                collapseBtn.click();
-                            }
+                    // 1. FIRST: Check if on mobile (screen <= 991px). If true, trigger native collapse once
+                    if (pWin.innerWidth <= 991) {
+                        var collapseBtn = pDoc.querySelector(
+                            '[data-testid="stSidebarCollapseButton"] button, ' +
+                            '[data-testid="stSidebarCollapseButton"] > button, ' +
+                            'button[data-testid="stSidebarCollapseButton"], ' +
+                            '[data-testid="stSidebar"] button[kind="header"]'
+                        );
+                        if (collapseBtn) {
+                            collapseBtn.click();
                         }
-                    } catch (e) {}
-                }
+                    }
 
-                tryCollapseSidebar();
-                scrollChatToBottom();
-                setTimeout(function() { tryCollapseSidebar(); scrollChatToBottom(); }, 100);
-                setTimeout(scrollChatToBottom, 250);
-                setTimeout(scrollChatToBottom, 450);
-                setTimeout(scrollChatToBottom, 700);
+                    // 2. SECOND: Staggered smooth scrolling to bottom
+                    function scrollChatToBottom() {
+                        try {
+                            var targets = [
+                                pDoc.querySelector('[data-testid="stAppViewContainer"]'),
+                                pDoc.querySelector('.main'),
+                                pDoc.querySelector('section.main'),
+                                pDoc.querySelector('[data-testid="stMain"]'),
+                                pDoc.documentElement,
+                                pDoc.body
+                            ];
+                            targets.forEach(function (el) {
+                                if (el && typeof el.scrollTo === 'function') {
+                                    el.scrollTo({ top: el.scrollHeight + 5000, behavior: 'smooth' });
+                                }
+                            });
+                            if (typeof pWin.scrollTo === 'function') {
+                                pWin.scrollTo({ top: (pDoc.body ? pDoc.body.scrollHeight : 999999) + 5000, behavior: 'smooth' });
+                            }
+                        } catch (e) {}
+                    }
+
+                    setTimeout(scrollChatToBottom, 50);
+                    setTimeout(scrollChatToBottom, 200);
+                    setTimeout(scrollChatToBottom, 450);
+                } catch (e) {}
             })();
         </script>
         """,
@@ -947,43 +945,6 @@ if user_input:
             f'<div class="message-row"><div class="user-bubble">{user_input}</div></div>',
             unsafe_allow_html=True,
         )
-
-    # Trigger smooth scroll so the new bubble & active spinner are immediately visible
-    components.html(
-        """
-        <script>
-            (function () {
-                function scrollChatToBottom() {
-                    try {
-                        if (!window.parent || !window.parent.document) return;
-                        var pDoc = window.parent.document;
-                        var targets = [
-                            pDoc.querySelector('[data-testid="stAppViewContainer"]'),
-                            pDoc.querySelector('.main'),
-                            pDoc.querySelector('section.main'),
-                            pDoc.querySelector('[data-testid="stMain"]'),
-                            pDoc.documentElement,
-                            pDoc.body
-                        ];
-                        targets.forEach(function(el) {
-                            if (el && typeof el.scrollTo === 'function') {
-                                el.scrollTo({ top: el.scrollHeight + 5000, behavior: 'smooth' });
-                            }
-                        });
-                        if (typeof window.parent.scrollTo === 'function') {
-                            window.parent.scrollTo({ top: (pDoc.body ? pDoc.body.scrollHeight : 999999) + 5000, behavior: 'smooth' });
-                        }
-                    } catch (e) {}
-                }
-                scrollChatToBottom();
-                setTimeout(scrollChatToBottom, 120);
-                setTimeout(scrollChatToBottom, 300);
-            })();
-        </script>
-        """,
-        height=0,
-        scrolling=False,
-    )
 
     # 2. Invoke the agent with spinner feedback
     _agent_error: str | None = None   # None = success; str = error message to display
