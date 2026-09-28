@@ -742,6 +742,7 @@ with st.sidebar:
             # user bubble appears in the UI before the API call is made.
             st.session_state["messages"].append({"role": "user", "content": q})
             st.session_state["prefill_query"] = q
+            st.session_state["collapse_sidebar_mobile"] = True
             st.rerun()
 
     st.markdown("<hr>", unsafe_allow_html=True)
@@ -753,8 +754,43 @@ with st.sidebar:
         st.session_state["total_queries"] = 0
         st.session_state["rag_hits"] = 0
         st.session_state["web_hits"] = 0
+        st.session_state["collapse_sidebar_mobile"] = True
         st.rerun()
     st.markdown('</div>', unsafe_allow_html=True)
+
+# =============================================================================
+# SMART MOBILE SIDEBAR AUTO-COLLAPSE
+# =============================================================================
+if st.session_state.pop("collapse_sidebar_mobile", False):
+    components.html(
+        """
+        <script>
+            (function () {
+                function tryCollapseSidebar() {
+                    try {
+                        if (window.parent && window.parent.innerWidth <= 991) {
+                            var doc = window.parent.document;
+                            var collapseBtn = doc.querySelector(
+                                '[data-testid="stSidebarCollapseButton"] button, ' +
+                                '[data-testid="stSidebarCollapseButton"] > button, ' +
+                                'button[data-testid="stSidebarCollapseButton"], ' +
+                                '[data-testid="stSidebar"] button[kind="header"]'
+                            );
+                            if (collapseBtn) {
+                                collapseBtn.click();
+                            }
+                        }
+                    } catch (e) {}
+                }
+                tryCollapseSidebar();
+                setTimeout(tryCollapseSidebar, 50);
+                setTimeout(tryCollapseSidebar, 150);
+            })();
+        </script>
+        """,
+        height=0,
+        scrolling=False,
+    )
 
 # =============================================================================
 # MAIN AREA — Header & Metrics
